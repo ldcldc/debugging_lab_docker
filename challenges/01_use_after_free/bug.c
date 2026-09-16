@@ -101,10 +101,6 @@ static Widget *widget_new(const VTable *vt, int id, const char *label) {
     return w;
 }
 
-static void widget_destroy(Widget *w) {
-    free(w);          
-}
-
 /* ── Screen ──────────────────────────────────────────────────── */
 static void screen_add(Screen *s, Widget *w) {
     if (s->count < MAX_WIDGETS) s->items[s->count++] = w;
@@ -113,6 +109,7 @@ static void screen_add(Screen *s, Widget *w) {
 static void screen_dispatch(Screen *s, int code) {
     for (int i = 0; i < s->count; i++) {
         Widget *w = s->items[i];
+        if(w == NULL) continue;
         w->vtbl->on_event(w, code);
     }
 }
@@ -120,15 +117,14 @@ static void screen_dispatch(Screen *s, int code) {
 static void screen_render(Screen *s) {
     for (int i = 0; i < s->count; i++) {
         Widget *w = s->items[i];
+        if(w == NULL) continue;
         w->vtbl->render(w);      
     }
 }
 
 static void dialog_on_event(Widget *self, int code) {
-    if (code == 1) {
-        self->closed = 1;
-        widget_destroy(self);   
-    }
+    if (code == 1)
+        self->closed = 1;  
 }
 
 static char *app_build_status(const char *text) {
@@ -157,7 +153,15 @@ int main(void) {
     screen_render(&s);
     screen_dispatch(&s, 1);
 
-    /* TODO 닫힌(closed) 위젯을 여기서 정리(free + 해당 슬롯 NULL)할 필요가 있음 */
+    for (int i = 0; i < s.count; i++) {
+        if(s.items[i]->closed == 1){
+            free(s.items[i]);
+            s.count--;
+            s.items[i] = NULL;
+            //s.items[i] = s.items[s.count - 1];
+        }
+    }
+
 
     char *status = app_build_status("dialog closed");
     printf("%s\n", status);
