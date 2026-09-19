@@ -42,41 +42,45 @@ typedef struct {
     int n;
 } Config;
 
-static void cfg_set(Config *c, const char *k, const char *v) {
-    if (c->n < MAX_KV) { c->keys[c->n] = k; c->vals[c->n] = v; c->n++; }
+static void cfg_set(Config *c, const char *k, const char *v){
+    if(c->n < MAX_KV){ c->keys[c->n] = k; c->vals[c->n] = v; c->n++; }
 }
 
-static const char *cfg_get(const Config *c, const char *k) {
+static const char *cfg_get(const Config *c, const char *k){
     for (int i = 0; i < c->n; i++)
-        if (strcmp(c->keys[i], k) == 0) return c->vals[i];
+        if(strcmp(c->keys[i], k) == 0) return c->vals[i];
     return NULL;                       /* 없는 키 → NULL */
 }
 
-static void expand(const Config *c, const char *tmpl, char *out, size_t outcap) {
+static void expand(const Config *c, const char *tmpl, char *out, size_t outcap){
     size_t o = 0;
-    for (const char *p = tmpl; *p; ) {
-        if (p[0] == '$' && p[1] == '{') {
+    for (const char *p = tmpl; *p; ){
+        if(p[0] == '$' && p[1] == '{'){
             const char *end = strchr(p, '}');
-            if (!end) break;
+            if(!end) break;
             char key[32];
             size_t kl = (size_t)(end - (p + 2));
-            if (kl >= sizeof key) kl = sizeof key - 1;
+            if(kl >= sizeof key) kl = sizeof key - 1;
             memcpy(key, p + 2, kl);
             key[kl] = '\0';
 
-            const char *v = cfg_get(c, key);      
-            size_t vl = strlen(v);                 
-            if (o + vl < outcap) { memcpy(out + o, v, vl); o += vl; }
+            const char *v = cfg_get(c, key);    
+            size_t vl = v ? strlen(v): 0;    
+            // if(vl == 0){
+            //     vl = 1;
+            //     v = "x";
+            // }
+            if(o + vl < outcap){ memcpy(out + o, v, vl); o += vl; }
             p = end + 1;
         } else {
-            if (o + 1 < outcap) out[o++] = *p;
+            if(o + 1 < outcap) out[o++] = *p;
             p++;
         }
     }
     out[o] = '\0';
 }
 
-int main(void) {
+int main(void){
     /* [Thinking Point]
      * "{ .n = 0 }" 은 멤버 이름을 콕 집어 초기화하는 '지정 초기화자(designated initializer)'다.
      *   tip 1. 초기화자에 하나라도 값을 주면, 명시하지 않은 나머지 멤버는 전부 0 으로

@@ -50,7 +50,7 @@ static char *join(const char *const *parts, int n) {
     if (!out) { perror("malloc"); exit(1); }
 
     size_t off = 0;
-    for (int i = 0; i < n; i++) {            /* 복사는 마지막 조각까지 전부 → 오버플로 */
+    for (int i = 0; i < n - 1; i++) {            /* 복사는 마지막 조각까지 전부 → 오버플로 */
         strcpy(out + off, parts[i]);
         off += strlen(parts[i]);
     }

@@ -1,4 +1,4 @@
-/*
+/*  
  * Challenge 01 — Use After Free (심화: vtable 기반 위젯 시스템)
  *
  * [시나리오]
@@ -112,6 +112,21 @@ static void screen_dispatch(Screen *s, int code) {
         if(w == NULL) continue;
         w->vtbl->on_event(w, code);
     }
+    for (int i = 0; i < s->count; i++) {
+        Widget *w = s->items[i];
+        if(w == NULL && s->items[i]->closed == 1){
+            free(w);
+            s->items[i] = NULL;
+        }
+    }
+}
+
+static void screen_dispatch__(Screen *s, int code) {
+    for (int i = 0; i < s->count; i++) {
+        Widget *w = s->items[i];
+        if(((w->vtbl) == &DIALOG_VT) && (code == 1)) s->items[i] = NULL;
+        w->vtbl->on_event(w, code);
+    }
 }
 
 static void screen_render(Screen *s) {
@@ -152,16 +167,6 @@ int main(void) {
     printf("frame 1:\n");
     screen_render(&s);
     screen_dispatch(&s, 1);
-
-    for (int i = 0; i < s.count; i++) {
-        if(s.items[i]->closed == 1){
-            free(s.items[i]);
-            s.count--;
-            s.items[i] = NULL;
-            //s.items[i] = s.items[s.count - 1];
-        }
-    }
-
 
     char *status = app_build_status("dialog closed");
     printf("%s\n", status);
